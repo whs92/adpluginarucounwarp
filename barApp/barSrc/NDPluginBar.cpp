@@ -371,6 +371,16 @@ asynStatus NDPluginBar::decode_bar_codes(Mat &img) {
 
     return asynSuccess;
 }
+/*Function that uses opencv to generate an aruco code
+
+*/
+asynStatus NDPluginBar::gen_aruco() {
+
+    cv::Ptr<cv::aruco::Dictionary> dictionary;
+    dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_250);
+    return asynSuccess;
+}
+
 
 /* Function that uses opencv methods with the locations of the discovered codes to place
  * bounding boxes around the areas of the image that contain barcodes. This is
@@ -395,7 +405,7 @@ asynStatus NDPluginBar::show_bar_codes(Mat &img) {
                 outside = barPoints;
             int n = outside.size();
             for (int j = 0; j < n; j++) {
-                line(img, outside[j], outside[(j + 1) % n], Scalar(0, 0, 255), 3);
+                line(img, outside[j], outside[(j + 1) % n], Scalar(0, 255, 0), 3);
             }
         }
         return asynSuccess;

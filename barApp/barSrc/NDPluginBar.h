@@ -15,6 +15,7 @@
 //two includes
 #include <zbar.h>
 #include <opencv2/opencv.hpp>
+#include <opencv2/aruco/dictionary.hpp>
 #include <thread>
 
 using namespace std;
@@ -157,7 +158,8 @@ class NDPluginBar : public NDPluginDriver {
     Image scan_image(Mat &img);
     asynStatus decode_bar_codes(Mat &img);
 
-
+    //function to generate aruco code
+    asynStatus gen_aruco();
     //function that displays detected bar codes
     asynStatus show_bar_codes(Mat &img);
 
