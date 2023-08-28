@@ -15,7 +15,9 @@
 //two includes
 #include <zbar.h>
 #include <opencv2/opencv.hpp>
+#include <opencv2/aruco.hpp>
 #include <opencv2/aruco/dictionary.hpp>
+#include <opencv2/aruco/charuco.hpp>
 #include <thread>
 
 using namespace std;
@@ -159,7 +161,17 @@ class NDPluginBar : public NDPluginDriver {
     asynStatus decode_bar_codes(Mat &img);
 
     //function to generate aruco code
-    asynStatus gen_aruco();
+    asynStatus gen_aruco(Mat &img, int dict);
+    asynStatus h_cat(Mat &img1, Mat &img2, Mat &out_img );
+    asynStatus show_matches(Mat &img1, Mat &img2, Mat &out_img,vector<cv::Point2f> points1, vector<cv::Point2f> points2  );
+    //find the intersection of two vectors of ints
+    //std::vector<long unsigned int> intersection(std::vector<int> v1, std::vector<int> v2);
+
+    asynStatus find_charuco_arrays(Mat &img,  int dict, InputOutputArrayOfArrays markerCorners, InputOutputArray markerIds, InputOutputArray charucoCorners, InputOutputArray charucoIds);
+
+    //Generate a scaled image of the charuco board
+    asynStatus gen_charuco_img(Mat &img,  int dict );
+
     //function that displays detected bar codes
     asynStatus show_bar_codes(Mat &img);
 
