@@ -1,14 +1,15 @@
 /*
- * NDPluginBar.cpp
+ * NDPluginArucoUnwarp.cpp
  *
- * Barcode/QRcode reader plugin for EPICS area detector
+ * Plugin for EPICS area detector which searches for ChArUco codes and then uses
+ * the points found to unwarp an image and apply scaling
  * Extends from the base NDPlugin Driver and overrides its processCallbacks function
- * The OpenCV computer vision library and the zbar barcode detection libraries are used
+ * The OpenCV computer vision library is used
  *
- * Author: Jakub Wlodek
+ * Author: Will Smith
  *
- * Created on: December 3, 2017
- * Last updated: January 4, 2019
+ * Created on: August 28, 2023
+ * 
  *
 */
 
@@ -27,49 +28,17 @@
 #include <epicsString.h>
 #include <iocsh.h>
 #include "NDArray.h"
-#include "NDPluginBar.h"
+#include "NDPluginArucoUnwarp.h"
 
-//OpenCV is used for image manipulation, zbar for barcode detection
-#include <zbar.h>
+//OpenCV is used for image manipulation
 #include <opencv2/opencv.hpp>
 
 //some basic namespaces
 using namespace std;
 using namespace cv;
-using namespace zbar;
 
-static const char *driverName = "NDPluginBar";
+static const char *driverName = "NDPluginArucoUnwarp";
 RNG rng(12345);
-//------------------------------------------------------
-// Functions called at init
-//------------------------------------------------------
-
-/* Function that places PV indexes into arrays for easier iteration */
-asynStatus NDPluginBar::initPVArrays() {
-    barcodeMessagePVs[0] = NDPluginBarBarcodeMessage1;
-    barcodeMessagePVs[1] = NDPluginBarBarcodeMessage2;
-    barcodeMessagePVs[2] = NDPluginBarBarcodeMessage3;
-    barcodeMessagePVs[3] = NDPluginBarBarcodeMessage4;
-    barcodeMessagePVs[4] = NDPluginBarBarcodeMessage5;
-
-    barcodeTypePVs[0] = NDPluginBarBarcodeType1;
-    barcodeTypePVs[1] = NDPluginBarBarcodeType2;
-    barcodeTypePVs[2] = NDPluginBarBarcodeType3;
-    barcodeTypePVs[3] = NDPluginBarBarcodeType4;
-    barcodeTypePVs[4] = NDPluginBarBarcodeType5;
-
-    cornerXPVs[0] = NDPluginBarUpperLeftX;
-    cornerXPVs[1] = NDPluginBarUpperRightX;
-    cornerXPVs[2] = NDPluginBarLowerLeftX;
-    cornerXPVs[3] = NDPluginBarLowerRightX;
-
-    cornerYPVs[0] = NDPluginBarUpperLeftY;
-    cornerYPVs[1] = NDPluginBarUpperRightY;
-    cornerYPVs[2] = NDPluginBarLowerLeftY;
-    cornerYPVs[3] = NDPluginBarLowerRightY;
-
-    return asynSuccess;
-}
 
 //------------------------------------------------------
 // Utility functions for printing errors and for clearing previous codes
@@ -78,18 +47,10 @@ asynStatus NDPluginBar::initPVArrays() {
 /**
  * Function for printing out OpenCV exception information
  */
-void NDPluginBar::printCVError(cv::Exception &e, const char *functionName) {
+void NDPluginArucoUnwarp::printCVError(cv::Exception &e, const char *functionName) {
     cout << "OpenCV Error in function " << functionName << " with code: " << e.code << ", " << e.err;
 }
 
-/**
- * Function that clears out the currently detected barcodes.
- */
-asynStatus NDPluginBar::clearPreviousCodes() {
-    codes_in_image.clear();
-    setIntegerParam(NDPluginBarNumberCodes, 0);
-    return asynSuccess;
-}
 
 //------------------------------------------------------
 // Image type conversion functions
@@ -101,14 +62,14 @@ asynStatus NDPluginBar::clearPreviousCodes() {
  * Image types
  * 
  * If the image is in RGB, it is converted to grayscale before it is passed to the plugin, because
- * zbar requires a grayscale image for detection
+ * zArucoUnwarp requires a grayscale image for detection
  * 
  * @params[in]: pArray	-> pointer to an NDArray
  * @params[in]: arrayInfo -> pointer to info about NDArray
  * @params[out]: img	-> smart pointer to output Mat
  * @return: success if able to convert, error otherwise
  */
-asynStatus NDPluginBar::ndArray2Mat(NDArray *pArray, NDArrayInfo *arrayInfo, Mat &img) {
+asynStatus NDPluginArucoUnwarp::ndArray2Mat(NDArray *pArray, NDArrayInfo *arrayInfo, Mat &img) {
     const char *functionName = "ndArray2Mat";
     // data type and num dimensions used during conversion
     NDDataType_t dataType = pArray->dataType;
@@ -144,32 +105,21 @@ asynStatus NDPluginBar::ndArray2Mat(NDArray *pArray, NDArrayInfo *arrayInfo, Mat
             return asynError;
     }
 
-    /*
-    try {
-    // image must be converted to grayscale before barcode processing
-    if (img.channels() != 1) {
-        cvtColor(img, img, COLOR_RGB2GRAY);
-    }
-    } catch (cv::Exception &e) {
-        printCVError(e, functionName);
-        return asynError;
-    }
-    */
-
+   
     return asynSuccess;
 }
 
 /**
  * Function that converts Mat back into NDArray. This function is guaranteed to 
  * have either a 8 bit or 16 bit color image, because the bounding boxes drawn
- * around the detected barcodes are blue. The rest of the image will appear
+ * around the detected ArucoUnwarpcodes are blue. The rest of the image will appear
  * black and white, but the actual color mode will be RGB
  * 
  * @params[out]: pScratch -> output NDArray
- * @params[in]: img	-> Mat with barcode bounding boxes drawn
+ * @params[in]: img	-> Mat with ArucoUnwarpcode bounding boxes drawn
  * @return: success if converted correctly, error otherwise 
  */
-asynStatus NDPluginBar::mat2NDArray(NDArray *pScratch, Mat &img) {
+asynStatus NDPluginArucoUnwarp::mat2NDArray(NDArray *pScratch, Mat &img) {
     const char *functionName = "mat2NDArray";
     int ndims = 3;
     Size matSize = img.size();
@@ -219,187 +169,7 @@ asynStatus NDPluginBar::mat2NDArray(NDArray *pScratch, Mat &img) {
     return asynSuccess;
 }
 
-/**
- * Function used to use a form of thresholding to reverse the coloration of a bar code
- * or QR code that is in the white on black format rather than the standard black on white
- *
- * @params[out]: img -> image containing inverse QR code. Required to be 8 bit
- * @return: status -> if image is 8 bit, then invert it and success, otherwise, error
- */
-asynStatus NDPluginBar::fix_inverted(Mat &img) {
-    if (img.depth() != CV_8U || img.depth() != CV_8S) {
-        asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s Error, only 8 bit images support inversion\n", driverName, "fix_inverted");
-        return asynError;
-    }
-    subtract(Scalar(255), img, img);
-    return asynSuccess;
-}
 
-/**
- * Function that is used simply to offload the process of setting the PV values
- * of the detected corners. It takes the current detected bar code, assignes the values of
- * the corners to the struct, and then, if it is the first detected code, sets PV vals
- *
- * @params[out]:  discovered 	-> struct contatining discovered bar or QR code
- * @params[in]:  symbol 		-> current discovered code
- * @params[in]:  update_corners -> flag to see if it is the first detected code
- * @return: status
- */
-asynStatus NDPluginBar::push_corners(bar_QR_code &discovered, Image::SymbolIterator &symbol, int update_corners, int imgHeight) {
-    for (int i = 0; i < symbol->get_location_size(); i++) {
-        discovered.position.push_back(Point(symbol->get_location_x(i), symbol->get_location_y(i)));
-    }
-    if (update_corners == 1) {
-        updateCorners(discovered, imgHeight);
-    }
-    return asynSuccess;
-}
-
-/**
- * Function that updates corner coordinate PVs to those of
- * a specific detected bar code
- * 
- * @params[in]: discovered	-> code from which we want corner info
- * @return: status
- */
-asynStatus NDPluginBar::updateCorners(bar_QR_code &discovered, int imgHeight) {
-    //const char* functionName = "updateCorners";
-    int sizeY;
-    getIntegerParam(NDArraySizeY, &sizeY);
-    int i;
-    for (i = 0; i < 4; i++) {
-        if (i == 0) {
-            setIntegerParam(NDPluginBarUpperLeftX, discovered.position[i].x);
-            setIntegerParam(NDPluginBarUpperLeftY, imgHeight - discovered.position[i].y);
-        } else if (i == 1) {
-            setIntegerParam(NDPluginBarUpperRightX, discovered.position[i].x);
-            setIntegerParam(NDPluginBarUpperRightY, imgHeight - discovered.position[i].y);
-        } else if (i == 2) {
-            setIntegerParam(NDPluginBarLowerLeftX, discovered.position[i].x);
-            setIntegerParam(NDPluginBarLowerLeftY, imgHeight - discovered.position[i].y);
-        } else if (i == 3) {
-            setIntegerParam(NDPluginBarLowerRightX, discovered.position[i].x);
-            setIntegerParam(NDPluginBarLowerRightY, imgHeight - discovered.position[i].y);
-        }
-    }
-    return asynSuccess;
-}
-
-/**
- * Function that uses zbar to scan image for barcodes
- * 
- * @params[in]: img -> input image in Mat format
- * @return: Image -> new image object with scanned symbols
- */
-Image NDPluginBar::scan_image(Mat &img) {
-    //initialize the image and the scanner object
-    ImageScanner zbarScanner;
-    zbarScanner.set_config(ZBAR_NONE, ZBAR_CFG_ENABLE, 1);
-    Image scannedImage(img.cols, img.rows, "Y800", (uchar *)img.data, img.cols * img.rows);
-
-    //scan the image with the zbar scanner
-    zbarScanner.scan(scannedImage);
-
-    return scannedImage;
-}
-
-/**
- * Function that clears any non-overwritten barcode PVs between array callbacks
- * 
- * @params[in]: counter -> number of codes detected in the new image
- * @return: success if set correctly otherwise error
- */
-asynStatus NDPluginBar::clear_unused_barcode_pvs(int counter) {
-    //const char* functionName = "clear_unused_barcode_pvs";
-    int i;
-    for (i = counter; i < NUM_CODES; i++) {
-        asynStatus s1 = setStringParam(barcodeMessagePVs[i], "No Barcode Found");
-        asynStatus s2 = setStringParam(barcodeTypePVs[i], "None");
-        if (s1 == asynError || s2 == asynError) return asynError;
-    }
-    return asynSuccess;
-}
-
-/**
- * Function that does the barcode decoding. It is passed an image and a vector
- * that will store all of the codes found in the image. A zbar scanner is initialized.
- * The image is changed from an opencv to a Image object, and then it is scanned by zbar.
- * We then iterate over the discovered symbols in the image, and create a instance of the
- * struct. the struct is added to the vector, and the bars location data and type are
- * stored, and printed. Additionally, we populate the associated PVs
- *
- * @params[in]: im -> the opencv image generated by converting the NDArray
- * @return: void
- */
-asynStatus NDPluginBar::decode_bar_codes(Mat &img) {
-    // static const char* functionName = "decode_bar_codes";
-
-    // first scan the image for barcodes
-    Image scannedImage = scan_image(img);
-
-    //counter for number of codes in current image
-    int counter = 0;
-
-    // remove any previously detected barcodes
-    clearPreviousCodes();
-
-    for (Image::SymbolIterator symbol = scannedImage.symbol_begin(); symbol != scannedImage.symbol_end(); ++symbol) {
-        //get information from detected bar code and populate a bar_QR_code struct
-        bar_QR_code barQR;
-        barQR.type = symbol->get_type_name();
-        barQR.data = symbol->get_data();
-
-        //set PVs
-        setStringParam(barcodeTypePVs[counter], barQR.type);
-        setStringParam(barcodeMessagePVs[counter], barQR.data);
-        //iterate the number of discovered codes
-        int num_codes = 0;
-        getIntegerParam(NDPluginBarNumberCodes, &num_codes);
-        num_codes = num_codes + 1;
-        setIntegerParam(NDPluginBarNumberCodes, num_codes);
-
-        int code_corners;
-        getIntegerParam(NDPluginBarCodeCorners, &code_corners);
-        //only the first code has its coordinates saved
-        if (counter == code_corners) {
-            //push location data
-            push_corners(barQR, symbol, 1, img.size().height);
-        } else {
-            push_corners(barQR, symbol, 0, img.size().height);
-        }
-        codes_in_image.push_back(barQR);
-
-        counter++;
-    }
-
-    // clear any old barcode PVs that were not overwritten
-    clear_unused_barcode_pvs(counter);
-
-    return asynSuccess;
-}
-/*Function that uses opencv to generate an aruco code
- * @params[in]: im -> the opencv image generated by converting the NDArray
- * @return: void
-*/
-asynStatus NDPluginBar::gen_aruco(Mat &img, int dict) {
-
-    cv::Ptr<cv::aruco::Dictionary> dictionary;
-    //Generate the dictionary
-    dictionary = cv::aruco::getPredefinedDictionary(dict);
-
-    //Generate the CharucoBoard
-    cv::Ptr<cv::aruco::CharucoBoard> board;
-    board = cv::aruco::CharucoBoard::create(5,5,20,14,dictionary);
-
-    //Draw the board
-    Mat temp_img;
-    board->draw(cv::Size(512,512),temp_img); //we have to use -> because board is a pointer. 
-
-    //Invert the board and pass to the input image
-    cv::bitwise_not(temp_img, img);
-
-    return asynSuccess;
-}
 
 
 /*Function that uses opencv to locate ArUco and ChArUco points in a given board pattern
@@ -407,7 +177,7 @@ asynStatus NDPluginBar::gen_aruco(Mat &img, int dict) {
  * @params[in]: int -> the aruco dict enum
  * @return: void
 */
-asynStatus NDPluginBar::find_charuco_arrays(Mat &img,  int dict, InputOutputArrayOfArrays markerCorners, InputOutputArray markerIds, InputOutputArray charucoCorners, InputOutputArray charucoIds) {
+asynStatus NDPluginArucoUnwarp::find_charuco_arrays(Mat &img,  int dict, InputOutputArrayOfArrays markerCorners, InputOutputArray markerIds, InputOutputArray charucoCorners, InputOutputArray charucoIds) {
 
     // init some temporary variables
     
@@ -490,7 +260,7 @@ function which given two vectors of arrays will output the indices of the inters
  * @params[in]: int -> the aruco dict enum
  * @return: void
 */
-asynStatus NDPluginBar::gen_charuco_img(Mat &img,  int dict ){
+asynStatus NDPluginArucoUnwarp::gen_charuco_img(Mat &img,  int dict ){
 
     //Draw the board
     Mat temp_img;
@@ -525,7 +295,7 @@ asynStatus NDPluginBar::gen_charuco_img(Mat &img,  int dict ){
 
 /* Function which will concatenate two images of different sizes
 */
-asynStatus NDPluginBar::h_cat(Mat &img1, Mat &img2, Mat &out_img ){
+asynStatus NDPluginArucoUnwarp::h_cat(Mat &img1, Mat &img2, Mat &out_img ){
 
  
 
@@ -548,7 +318,7 @@ asynStatus NDPluginBar::h_cat(Mat &img1, Mat &img2, Mat &out_img ){
    will plot lines from the points in one image to another image. 
    The images will be stacked
 */
-asynStatus NDPluginBar::show_matches(Mat &img1, Mat &img2, Mat &out_img,vector<cv::Point2f> points1, vector<cv::Point2f> points2  ){
+asynStatus NDPluginArucoUnwarp::show_matches(Mat &img1, Mat &img2, Mat &out_img,vector<cv::Point2f> points1, vector<cv::Point2f> points2  ){
     
     // Form the concatenated image
     h_cat(img1, img2, out_img);
@@ -571,49 +341,16 @@ asynStatus NDPluginBar::show_matches(Mat &img1, Mat &img2, Mat &out_img,vector<c
 
 
 
-/* Function that uses opencv methods with the locations of the discovered codes to place
- * bounding boxes around the areas of the image that contain barcodes. This is
- * so the user can confirm that the correct area of the image was discovered
- *
- * TODO: Change this function to pipe coordinate information back into NDArray
- *
- * @params[out]: img -> image in which the barcode was discovered
- * @params[in]: codes_in_image -> all barcodes detected in the image
- * @return: status
-*/
-asynStatus NDPluginBar::show_bar_codes(Mat &img) {
-    const char *functionName = "show_bar_codes";
-    try {
-        cvtColor(img, img, COLOR_GRAY2RGB);
-        for (unsigned int i = 0; i < codes_in_image.size(); i++) {
-            vector<Point> barPoints = codes_in_image[i].position;
-            vector<Point> outside;
-            if (barPoints.size() > 4)
-                convexHull(barPoints, outside);
-            else
-                outside = barPoints;
-            int n = outside.size();
-            for (int j = 0; j < n; j++) {
-                line(img, outside[j], outside[(j + 1) % n], Scalar(0, 255, 0), 3);
-            }
-        }
-        return asynSuccess;
-    } catch (cv::Exception &e) {
-        printCVError(e, functionName);
-        return asynError;
-    }
+static void ArucoUnwarpcode_image_callback_wrapper(void* pPtr, NDArray* pArray){
+    NDPluginArucoUnwarp* pPlugin = (NDPluginArucoUnwarp*) pPtr;
+    pPlugin->ArucoUnwarpcode_image_callback(pArray);
 }
 
-static void barcode_image_callback_wrapper(void* pPtr, NDArray* pArray){
-    NDPluginBar* pPlugin = (NDPluginBar*) pPtr;
-    pPlugin->barcode_image_callback(pArray);
-}
-
-asynStatus NDPluginBar::barcode_image_callback(NDArray* pArray){
+asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
     //start with an empty array for copy and array info
     NDArray *pScratch = NULL;
     Mat img, ref_img;
-    const char* functionName = "barcode_image_callback";
+    const char* functionName = "ArucoUnwarpcode_image_callback";
     NDArrayInfo arrayInfo;
     // convert to Mat
     pArray->getInfo(&arrayInfo);
@@ -730,14 +467,15 @@ asynStatus NDPluginBar::barcode_image_callback(NDArray* pArray){
 }
 
 /**
- * Override of NDPluginDriver function. Used when selecting between barcodes
+ * Override of NDPluginDriver function. Used when selecting between ArucoUnwarpcodes
  * for which corners should be shown.
  * 
  * @params[in]: pasynUser	-> pointer to asyn User that initiated the transaction
  * @params[in]: value		-> value PV was set to
  * @return: success if PV was updated correctly, otherwise error
  */
-asynStatus NDPluginBar::writeInt32(asynUser *pasynUser, epicsInt32 value) {
+/*
+asynStatus NDPluginArucoUnwarp::writeInt32(asynUser *pasynUser, epicsInt32 value) {
     const char *functionName = "writeInt32";
     int function = pasynUser->reason;
     asynStatus status = asynSuccess;
@@ -745,12 +483,10 @@ asynStatus NDPluginBar::writeInt32(asynUser *pasynUser, epicsInt32 value) {
     status = setIntegerParam(function, value);
     asynPrint(this->pasynUserSelf, ASYN_TRACEIO_DRIVER, "%s::%s function = %d value=%d\n", driverName, functionName, function, value);
 
-    if (function == NDPluginBarCodeCorners) {
-        int i;
-        if (codes_in_image.size() <= (size_t) value) {
-            for (i = 0; i < 4; i++) {
-                setIntegerParam(cornerXPVs[i], 0);
-                setIntegerParam(cornerYPVs[i], 0);
+    if (function == NDPluginArucoUnwarpFindHomography) {
+        
+        setIntegerParam(, 0);
+                setIntegerParam(NDPluginBarFindHomography, 0);
             }
         } else {
             for (i = 0; i < 4; i++) {
@@ -758,7 +494,7 @@ asynStatus NDPluginBar::writeInt32(asynUser *pasynUser, epicsInt32 value) {
                 setIntegerParam(cornerYPVs[i], codes_in_image[value].position[i].y);
             }
         }
-    } else if (function < ND_BAR_FIRST_PARAM) {
+    } else if (function < ND_ArucoUnwarp_FIRST_PARAM) {
         status = NDPluginDriver::writeInt32(pasynUser, value);
     }
     callParamCallbacks();
@@ -767,18 +503,20 @@ asynStatus NDPluginBar::writeInt32(asynUser *pasynUser, epicsInt32 value) {
     }
     return status;
 }
+*/
+
 
 /* Process callbacks function inherited from NDPluginDriver.
  * Here it is overridden, and the following steps are taken:
- * 1) Check if the NDArray is mono, as zbar only accepts mono/grayscale images
+ * 1) Check if the NDArray is mono, as zArucoUnwarp only accepts mono/grayscale images
  * 2) Convert the NDArray recieved into an OpenCV Mat object
- * 3) Decode barcode method is called
- * 4) (Currently Disabled) Show barcode method is called
+ * 3) Decode ArucoUnwarpcode method is called
+ * 4) (Currently Disabled) Show ArucoUnwarpcode method is called
  *
  * @params[in]: pArray -> NDArray recieved by the plugin from the camera
  * @return: void
 */
-void NDPluginBar::processCallbacks(NDArray *pArray) {
+void NDPluginArucoUnwarp::processCallbacks(NDArray *pArray) {
     static const char *functionName = "processCallbacks";
 
     //call base class and get information about frame
@@ -790,7 +528,7 @@ void NDPluginBar::processCallbacks(NDArray *pArray) {
     if(!this->processing){
         asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s::%s Starting processing thread\n", driverName, functionName);
         this->processing = true;
-        thread processing_thread(barcode_image_callback_wrapper, this, pArray);
+        thread processing_thread(ArucoUnwarpcode_image_callback_wrapper, this, pArray);
         processing_thread.detach();
     }
 
@@ -800,7 +538,7 @@ void NDPluginBar::processCallbacks(NDArray *pArray) {
 }
 
 //constructror from base class
-NDPluginBar::NDPluginBar(const char *portName, int queueSize, int blockingCallbacks,
+NDPluginArucoUnwarp::NDPluginArucoUnwarp(const char *portName, int queueSize, int blockingCallbacks,
                          const char *NDArrayPort, int NDArrayAddr,
                          int maxBuffers, size_t maxMemory,
                          int priority, int stackSize)
@@ -812,39 +550,14 @@ NDPluginBar::NDPluginBar(const char *portName, int queueSize, int blockingCallba
                      ASYN_MULTIDEVICE, 1, priority, stackSize, 1) {
     char versionString[25];
 
-    //basic barcode parameters 1-5
-    createParam(NDPluginBarBarcodeMessage1String, asynParamOctet, &NDPluginBarBarcodeMessage1);
-    createParam(NDPluginBarBarcodeType1String, asynParamOctet, &NDPluginBarBarcodeType1);
-    createParam(NDPluginBarBarcodeMessage2String, asynParamOctet, &NDPluginBarBarcodeMessage2);
-    createParam(NDPluginBarBarcodeType2String, asynParamOctet, &NDPluginBarBarcodeType2);
-    createParam(NDPluginBarBarcodeMessage3String, asynParamOctet, &NDPluginBarBarcodeMessage3);
-    createParam(NDPluginBarBarcodeType3String, asynParamOctet, &NDPluginBarBarcodeType3);
-    createParam(NDPluginBarBarcodeMessage4String, asynParamOctet, &NDPluginBarBarcodeMessage4);
-    createParam(NDPluginBarBarcodeType4String, asynParamOctet, &NDPluginBarBarcodeType4);
-    createParam(NDPluginBarBarcodeMessage5String, asynParamOctet, &NDPluginBarBarcodeMessage5);
-    createParam(NDPluginBarBarcodeType5String, asynParamOctet, &NDPluginBarBarcodeType5);
+   
 
     //common params
-    createParam(NDPluginBarNumberCodesString, asynParamInt32, &NDPluginBarNumberCodes);
-    createParam(NDPluginBarCodeCornersString, asynParamInt32, &NDPluginBarCodeCorners);
-    createParam(NDPluginBarInvertedBarcodeString, asynParamInt32, &NDPluginBarInvertedBarcode);
-
-    //x coordinates
-    createParam(NDPluginBarUpperLeftXString, asynParamInt32, &NDPluginBarUpperLeftX);
-    createParam(NDPluginBarUpperRightXString, asynParamInt32, &NDPluginBarUpperRightX);
-    createParam(NDPluginBarLowerLeftXString, asynParamInt32, &NDPluginBarLowerLeftX);
-    createParam(NDPluginBarLowerRightXString, asynParamInt32, &NDPluginBarLowerRightX);
-
-    //y coordinates
-    createParam(NDPluginBarUpperLeftYString, asynParamInt32, &NDPluginBarUpperLeftY);
-    createParam(NDPluginBarUpperRightYString, asynParamInt32, &NDPluginBarUpperRightY);
-    createParam(NDPluginBarLowerLeftYString, asynParamInt32, &NDPluginBarLowerLeftY);
-    createParam(NDPluginBarLowerRightYString, asynParamInt32, &NDPluginBarLowerRightY);
-
-    initPVArrays();
-
-    setStringParam(NDPluginDriverPluginType, "NDPluginBar");
-    epicsSnprintf(versionString, sizeof(versionString), "%d.%d.%d", BAR_VERSION, BAR_REVISION, BAR_MODIFICATION);
+    createParam(NDPluginArucoUnwarpShowMappingString, asynParamInt32, &NDPluginArucoUnwarpShowMapping);
+    createParam(NDPluginArucoUnwarpFindHomographyString, asynParamInt32, &NDPluginArucoUnwarpFindHomography);
+    
+    setStringParam(NDPluginDriverPluginType, "NDPluginArucoUnwarp");
+    epicsSnprintf(versionString, sizeof(versionString), "%d.%d.%d", ArucoUnwarp_VERSION, ArucoUnwarp_REVISION, ArucoUnwarp_MODIFICATION);
     setStringParam(NDDriverVersion, versionString);
     connectToArrayPort();
 }
@@ -855,11 +568,11 @@ NDPluginBar::NDPluginBar(const char *portName, int queueSize, int blockingCallba
  * 
  * @params[in]	-> all passed to constructor
  */
-extern "C" int NDBarConfigure(const char *portName, int queueSize, int blockingCallbacks,
+extern "C" int NDArucoUnwarpConfigure(const char *portName, int queueSize, int blockingCallbacks,
                               const char *NDArrayPort, int NDArrayAddr,
                               int maxBuffers, size_t maxMemory,
                               int priority, int stackSize) {
-    NDPluginBar *pPlugin = new NDPluginBar(portName, queueSize, blockingCallbacks, NDArrayPort, NDArrayAddr,
+    NDPluginArucoUnwarp *pPlugin = new NDPluginArucoUnwarp(portName, queueSize, blockingCallbacks, NDArrayPort, NDArrayAddr,
                                            maxBuffers, maxMemory, priority, stackSize);
     return pPlugin->start();
 }
@@ -884,22 +597,22 @@ static const iocshArg *const initArgs[] = {&initArg0,
                                            &initArg7,
                                            &initArg8};
 
-/* Definition of the configure function for NDPluginBar in the IOC shell */
-static const iocshFuncDef initFuncDef = {"NDBarConfigure", 9, initArgs};
+/* Definition of the configure function for NDPluginArucoUnwarp in the IOC shell */
+static const iocshFuncDef initFuncDef = {"NDArucoUnwarpConfigure", 9, initArgs};
 
 /* link the configure function with the passed args, and call it from the IOC shell */
 static void initCallFunc(const iocshArgBuf *args) {
-    NDBarConfigure(args[0].sval, args[1].ival, args[2].ival,
+    NDArucoUnwarpConfigure(args[0].sval, args[1].ival, args[2].ival,
                    args[3].sval, args[4].ival, args[5].ival,
                    args[6].ival, args[7].ival, args[8].ival);
 }
 
 /* function to register the configure function in the IOC shell */
-extern "C" void NDBarRegister(void) {
+extern "C" void NDArucoUnwarpRegister(void) {
     iocshRegister(&initFuncDef, initCallFunc);
 }
 
 /* Exports plugin registration */
 extern "C" {
-    epicsExportRegistrar(NDBarRegister);
+    epicsExportRegistrar(NDArucoUnwarpRegister);
 }

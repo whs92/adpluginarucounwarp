@@ -1,5 +1,3 @@
-#Author: Jakub Wlodek December 2017
-
 TOP=../..
 include $(TOP)/configure/CONFIG
 #----------------------------------------
@@ -16,13 +14,13 @@ endif
 # Needed for new threading function
 CODE_CXXFLAGS=-std=c++11
 
-DBD += NDPluginBar.dbd
+DBD += NDPluginArucoUnwarp.dbd
 
-INC += NDPluginBar.h
+INC += NDPluginArucoUnwarp.h
 
-LIBRARY_IOC += NDPluginBar
+LIBRARY_IOC += NDPluginArucoUnwarp
 
-NDPluginBar_SRCS += NDPluginBar.cpp
+NDPluginArucoUnwarp_SRCS += NDPluginArucoUnwarp.cpp
 
 #TODO: When compiling external opencv+zbar test, I needed to run:
 # g++ test.cpp $(pkg-config --libs opencv --cflags) $(pkg-config --libs zbar --cflags) -o check
@@ -32,14 +30,7 @@ ifdef OPENCV_INCLUDE
     USR_INCLUDES += -I$(OPENCV_INCLUDE)
 endif
 ifdef OPENCV_LIB
-    NDPluginBar_DIR += $(OPENCV_LIB)
-endif
-
-ifdef ZBAR_INCLUDE
-    USR_INCLUDES += -I$(ZBAR_INCLUDE)
-endif
-ifdef ZBAR_LIB
-    NDPluginBar_DIR += $(ZBAR_LIB)
+    NDPluginArucoUnwarp_DIR += $(OPENCV_LIB)
 endif
 
 include $(AREA_DETECTOR)/ADCore/ADApp/commonLibraryMakefile

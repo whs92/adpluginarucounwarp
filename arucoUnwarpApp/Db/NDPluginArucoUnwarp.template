@@ -1,0 +1,49 @@
+# Database for NDArucoUnwarp Plugin
+# Will Smith
+# 
+# August 28, 2023
+
+# include the base driver template file
+include "NDPluginBase.template"
+
+
+# Records needed in database:
+# enable/disable side by side matching plot
+# enable/disable find new homography or use existing
+
+
+record(bo, "$(P)$(R)ShowMapping")
+{
+	field(PINI, "NO")
+	field(DTYP, "asynInt32")
+	field(OUT, "@asyn($(PORT),$(ADDR),$(TIMEOUT))SHOW_MAPPING")
+	field(ZNAM, "Display unwarped")
+	field(ONAM, "Show mapping")
+}
+
+record(bi, "$(P)$(R)ShowMapping_RBV")
+{
+	field(DTYP, "asynInt32")
+	field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))SHOW_MAPPING")
+	field(ZNAM, "Display unwarped")
+	field(ONAM, "Show mapping")
+	field(SCAN, "I/O Intr")
+}
+
+record(bo, "$(P)$(R)FindHomography")
+{
+	field(PINI, "NO")
+	field(DTYP, "asynInt32")
+	field(OUT, "@asyn($(PORT),$(ADDR),$(TIMEOUT))FIND_HOMOGRAPHY")
+	field(ZNAM, "Use existing homography")
+	field(ONAM, "Find new homography")
+}
+
+record(bi, "$(P)$(R)FindHomography_RBV")
+{
+	field(DTYP, "asynInt32")
+	field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))FIND_HOMOGRAPHY")
+	field(ZNAM, "Use existing homography")
+	field(ONAM, "Find new homography")
+	field(SCAN, "I/O Intr")
+}

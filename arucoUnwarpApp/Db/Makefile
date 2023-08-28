@@ -1,4 +1,4 @@
-#Author: Jakub Wlodek
+#Author: Will Smith
 
 TOP=../..
 include $(TOP)/configure/CONFIG
@@ -8,7 +8,7 @@ include $(TOP)/configure/CONFIG
 #optimization of db files using dbst(DEFAULT:NO)
 #DB_OPT=YES
 
-DB+=NDBar.template
+DB+=NDPluginArucoUnwarp.template
 
 
 include $(TOP)/configure/RULES
