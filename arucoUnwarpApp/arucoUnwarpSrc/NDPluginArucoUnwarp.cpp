@@ -130,6 +130,8 @@ asynStatus NDPluginArucoUnwarp::mat2NDArray(NDArray *pScratch, Mat &img) {
     dims[1] = matSize.width;
     dims[2] = matSize.height;
 
+    
+
     if (img.depth() == CV_8U)
         dataType = NDUInt8;
     else if (img.depth() == CV_8S)
@@ -156,7 +158,7 @@ asynStatus NDPluginArucoUnwarp::mat2NDArray(NDArray *pScratch, Mat &img) {
         img.release();
         return asynError;
     }
-
+    
     memcpy((unsigned char *)pScratch->pData, (unsigned char *)img.data, dataSize);
     pScratch->pAttributeList->add("ColorMode", "Color Mode", NDAttrInt32, &colorMode);
     pScratch->pAttributeList->add("DataType", "Data Type", NDAttrInt32, &dataType);
@@ -200,9 +202,11 @@ asynStatus NDPluginArucoUnwarp::find_charuco_arrays(Mat &img,  int dict, InputOu
 
     //We are dealing with quite low light images, so it will help us to increase the range of thresholds we attempt
     parameters->adaptiveThreshWinSizeMax = 43;
+    
 
     //We would like to use the points from our detection later for homography so we will take the extra processing for more precision
     parameters->cornerRefinementMethod = cv::aruco::CORNER_REFINE_SUBPIX;
+    parameters->cornerRefinementWinSize = 1;
 
     //We can define how precise we want to be'
     parameters->cornerRefinementMinAccuracy = 0.0001;
@@ -213,6 +217,8 @@ asynStatus NDPluginArucoUnwarp::find_charuco_arrays(Mat &img,  int dict, InputOu
     //asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s detected %d markers\n", driverName, functionName, markerIds.getMat().total());
     //Find the ChArUco Corners
     if(markerIds.getMat().total()>0){
+        //asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s Refining Markers\n", driverName, functionName);
+    
         //Refine the selection using the stuff we know about the board
         cv::aruco::refineDetectedMarkers(img, board, markerCorners, markerIds,rejectedCandidates);
 
@@ -308,9 +314,8 @@ asynStatus NDPluginArucoUnwarp::h_cat(Mat &img1, Mat &img2, Mat &out_img ){
     //Find Max height and width of images
     int max_height = max(img1.size().height,img2.size().height );
     int max_width = max(img1.size().width,img2.size().width );
-    Scalar value( rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255) );
+    Scalar value( 0,0,0);
 
-    asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s Info, the max height is %d and the max width is %d\n", driverName, "h_cat",max_height,max_width);
     
     cv::copyMakeBorder(img1,img1,0,max_height-img1.size().height,0,max_width-img1.size().width,cv::BORDER_CONSTANT,value);
     cv::copyMakeBorder(img2,img2,0,max_height-img2.size().height,0,max_width-img2.size().width,cv::BORDER_CONSTANT,value);
@@ -362,6 +367,11 @@ asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
     pArray->getInfo(&arrayInfo);
 
     asynStatus status;
+    int showMapping, findHomography, homographyAvailable, includeAruco;
+    getIntegerParam(NDPluginArucoUnwarpShowMapping, &showMapping);
+    getIntegerParam(NDPluginArucoUnwarpFindHomography, &findHomography);
+    getIntegerParam(NDPluginArucoUnwarpHomographyAvailable, &homographyAvailable);
+    getIntegerParam(NDPluginArucoUnwarpIncludeAruco, &includeAruco);
 
     // Convert the array into the image matrix
     status = ndArray2Mat(pArray, &arrayInfo, img);
@@ -441,14 +451,25 @@ asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
 
     // ------------ Join vectors and determine homography -----------------
 
-    subRefCharucoCorners.insert( subRefCharucoCorners.end(), subRefMarkerCornersExpanded.begin(), subRefMarkerCornersExpanded.end() );
-    inpCharucoCorners.insert( inpCharucoCorners.end(), inpMarkerCornersExpanded.begin(), inpMarkerCornersExpanded.end() );
+    if(includeAruco==1){
+        subRefCharucoCorners.insert( subRefCharucoCorners.end(), subRefMarkerCornersExpanded.begin(), subRefMarkerCornersExpanded.end() );
+        inpCharucoCorners.insert( inpCharucoCorners.end(), inpMarkerCornersExpanded.begin(), inpMarkerCornersExpanded.end() );
 
+    }
+    
+
+    // Print the location of the corners found in the input
+    /*
+    std::stringstream outst;
+
+    for(unsigned int i;i<inpMarkerCornersExpanded.size();i++){
+        outst << "(" << inpMarkerCornersExpanded[i].x << "," << inpMarkerCornersExpanded[i].y << ")";
+    }
+    asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s The points found in the input image: %s\n", driverName, functionName, outst.str().c_str());
+    
+    */
     
     
-    int showMapping, findHomography;
-    getIntegerParam(NDPluginArucoUnwarpShowMapping, &showMapping);
-    getIntegerParam(NDPluginArucoUnwarpFindHomography, &findHomography);
     if(showMapping == 1){
         
         Mat cat_img;
@@ -459,31 +480,40 @@ asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
     else if(findHomography ==1){
 
         // find the homography
-    
         if(inpCharucoCorners.size()>3 && subRefCharucoCorners.size()>3){
-            Mat H = cv::findHomography( inpCharucoCorners,subRefCharucoCorners, cv::RANSAC,2);
-        
-            //perform the warping
-            Mat warped_img;
-            cv::warpPerspective(img,warped_img, H, ref_img.size(),cv::INTER_LINEAR);
-            img = warped_img;
-
-
+            this -> H = cv::findHomography( inpCharucoCorners,subRefCharucoCorners, cv::RANSAC,5);
+            homographyAvailable = 1;
+            setIntegerParam(NDPluginArucoUnwarpHomographyAvailable,homographyAvailable);
+            
         }
 
     }
+
+    if(homographyAvailable ==1 && showMapping == 0){
+
+        //perform the warping
+        Mat warped_img;
+        cv::warpPerspective(img,warped_img, this -> H, ref_img.size(),cv::INTER_LINEAR);
+        img = warped_img;
+
+
+    }
+    
+        
     
     
     status = mat2NDArray(pScratch, img);
     if (status == asynError) {
         asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s Error, image not processed correctly\n", driverName, functionName);
     }
+    callParamCallbacks();
     this->processing = false;
+    
     return status;
 }
 
 /**
- * Override of NDPluginDriver function. Used when selecting between ArucoUnwarpcodes
+ * Override of NDPluginDriver function. Used when selecting between ArucoUnwarpcodescallParamCallbacks();
  * for which corners should be shown.
  * 
  * @params[in]: pasynUser	-> pointer to asyn User that initiated the transaction
@@ -566,13 +596,17 @@ NDPluginArucoUnwarp::NDPluginArucoUnwarp(const char *portName, int queueSize, in
                      ASYN_MULTIDEVICE, 1, priority, stackSize, 1) {
     char versionString[25];
 
+    
+
    
 
     //common params
     createParam(NDPluginArucoUnwarpShowMappingString, asynParamInt32, &NDPluginArucoUnwarpShowMapping);
     createParam(NDPluginArucoUnwarpShowMarkersString, asynParamInt32, &NDPluginArucoUnwarpShowMarkers);
     createParam(NDPluginArucoUnwarpFindHomographyString, asynParamInt32, &NDPluginArucoUnwarpFindHomography);
-    
+    createParam(NDPluginArucoUnwarpIncludeArucoString, asynParamInt32, &NDPluginArucoUnwarpIncludeAruco);
+    createParam(NDPluginArucoUnwarpHomographyAvailableString, asynParamInt32, &NDPluginArucoUnwarpHomographyAvailable);
+    setIntegerParam(NDPluginArucoUnwarpHomographyAvailable,0);
     setStringParam(NDPluginDriverPluginType, "NDPluginArucoUnwarp");
     epicsSnprintf(versionString, sizeof(versionString), "%d.%d.%d", ArucoUnwarp_VERSION, ArucoUnwarp_REVISION, ArucoUnwarp_MODIFICATION);
     setStringParam(NDDriverVersion, versionString);

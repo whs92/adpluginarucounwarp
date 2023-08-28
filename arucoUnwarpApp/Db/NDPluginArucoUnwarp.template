@@ -57,6 +57,23 @@ record(bo, "$(P)$(R)ShowMarkers")
 	field(ONAM, "show markers")
 }
 
+record(bo, "$(P)$(R)IncludeArUco")
+{
+	field(PINI, "NO")
+	field(DTYP, "asynInt32")
+	field(OUT, "@asyn($(PORT),$(ADDR),$(TIMEOUT))INCLUDE_ARUCO")
+	field(ZNAM, "Use only Checkerboard")
+	field(ONAM, "Use ArUco and Checkerboard")
+}
+record(bi, "$(P)$(R)IncludeArUco_RBV")
+{
+	field(DTYP, "asynInt32")
+	field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))INCLUDE_ARUCO")
+	field(ZNAM, "Use only Checkerboard")
+	field(ONAM, "Use ArUco and Checkerboard")
+	field(SCAN, "I/O Intr")
+}
+
 record(bi, "$(P)$(R)ShowMarkers_RBV")
 {
 	field(DTYP, "asynInt32")
@@ -65,3 +82,15 @@ record(bi, "$(P)$(R)ShowMarkers_RBV")
 	field(ONAM, "show markers")
 	field(SCAN, "I/O Intr")
 }
+
+
+record(bi, "$(P)$(R)HomographyAvailable_RBV")
+{
+	field(DTYP, "asynInt32")
+	field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))HOMOGRAPHY_AVAILABLE")
+	field(ZNAM, "no homography")
+	field(ONAM, "homography_available")
+	field(SCAN, "I/O Intr")
+}
+
+

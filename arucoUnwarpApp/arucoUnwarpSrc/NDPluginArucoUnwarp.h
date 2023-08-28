@@ -33,10 +33,11 @@ using namespace cv;
 
 /* Here I will define all of the output data types once the database is written */
 
-#define NDPluginArucoUnwarpShowMappingString "SHOW_MAPPING"          //asynInt32
-#define NDPluginArucoUnwarpFindHomographyString "FIND_HOMOGRAPHY"          //asynInt32
-#define NDPluginArucoUnwarpShowMarkersString "SHOW_MARKERS"          //asynInt32
-
+#define NDPluginArucoUnwarpShowMappingString "SHOW_MAPPING"                 //asynInt32
+#define NDPluginArucoUnwarpFindHomographyString "FIND_HOMOGRAPHY"           //asynInt32
+#define NDPluginArucoUnwarpShowMarkersString "SHOW_MARKERS"                 //asynInt32
+#define NDPluginArucoUnwarpIncludeArucoString "INCLUDE_ARUCO" //asynInt32
+#define NDPluginArucoUnwarpHomographyAvailableString "HOMOGRAPHY_AVAILABLE" //asynInt32
 /* class that does ArucoUnwarpcode readings */
 class NDPluginArucoUnwarp : public NDPluginDriver {
    public:
@@ -57,6 +58,8 @@ class NDPluginArucoUnwarp : public NDPluginDriver {
     int NDPluginArucoUnwarpShowMapping;
 #define ND_ArucoUnwarp_FIRST_PARAM NDPluginArucoUnwarpShowMapping
     int NDPluginArucoUnwarpShowMarkers;
+    int NDPluginArucoUnwarpHomographyAvailable;
+    int NDPluginArucoUnwarpIncludeAruco;
     //boolean to decide to use existing homography or find a new one
     int NDPluginArucoUnwarpFindHomography;
 #define ND_ArucoUnwarp_LAST_PARAM NDPluginArucoUnwarpFindHomography
@@ -64,6 +67,7 @@ class NDPluginArucoUnwarp : public NDPluginDriver {
    private:
     // processing thread
     bool processing = false;
+    Mat H;
 
     // image type conversion functions
     void printCVError(cv::Exception &e, const char *functionName);
