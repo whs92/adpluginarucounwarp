@@ -217,18 +217,24 @@ asynStatus NDPluginArucoUnwarp::find_charuco_arrays(Mat &img,  int dict, InputOu
         cv::aruco::refineDetectedMarkers(img, board, markerCorners, markerIds,rejectedCandidates);
 
     }
-    
+    int drawPoints;
+    getIntegerParam(NDPluginArucoUnwarpShowMarkers, &drawPoints);
     //Find the ChArUco Corners
     if(markerIds.getMat().total()>0){
 
         //Draw the markers on the image
-        cv::aruco::drawDetectedMarkers(img, markerCorners, markerIds);
+        if(drawPoints==1){
+            cv::aruco::drawDetectedMarkers(img, markerCorners, markerIds);
+        }
+        
 
         cv::aruco::interpolateCornersCharuco(markerCorners,markerIds,img,board,charucoCorners, charucoIds);
 
         if(charucoIds.getMat().total()>0){
             //draw those as well
-            cv::aruco::drawDetectedCornersCharuco(img, charucoCorners, charucoIds);
+            if(drawPoints==1){
+                cv::aruco::drawDetectedCornersCharuco(img, charucoCorners, charucoIds);
+            }
 
         }
         
@@ -438,25 +444,35 @@ asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
     subRefCharucoCorners.insert( subRefCharucoCorners.end(), subRefMarkerCornersExpanded.begin(), subRefMarkerCornersExpanded.end() );
     inpCharucoCorners.insert( inpCharucoCorners.end(), inpMarkerCornersExpanded.begin(), inpMarkerCornersExpanded.end() );
 
-    // find the homography
     
-    if(inpCharucoCorners.size()>3 && subRefCharucoCorners.size()>3){
-        Mat H = cv::findHomography( inpCharucoCorners,subRefCharucoCorners, cv::RANSAC,2);
     
-        //perform the warping
-        Mat warped_img;
-        cv::warpPerspective(img,warped_img, H, ref_img.size(),cv::INTER_LINEAR);
-        img = warped_img;
+    int showMapping, findHomography;
+    getIntegerParam(NDPluginArucoUnwarpShowMapping, &showMapping);
+    getIntegerParam(NDPluginArucoUnwarpFindHomography, &findHomography);
+    if(showMapping == 1){
+        
+        Mat cat_img;
+        show_matches(img, ref_img, cat_img,inpCharucoCorners,subRefCharucoCorners);
+        img = cat_img;
 
+    }
+    else if(findHomography ==1){
+
+        // find the homography
+    
+        if(inpCharucoCorners.size()>3 && subRefCharucoCorners.size()>3){
+            Mat H = cv::findHomography( inpCharucoCorners,subRefCharucoCorners, cv::RANSAC,2);
+        
+            //perform the warping
+            Mat warped_img;
+            cv::warpPerspective(img,warped_img, H, ref_img.size(),cv::INTER_LINEAR);
+            img = warped_img;
+
+
+        }
 
     }
     
-    
-    /*
-    Mat cat_img;
-    show_matches(img, ref_img, cat_img,inpCharucoCorners,subRefCharucoCorners);
-    img = cat_img;
-    */
     
     status = mat2NDArray(pScratch, img);
     if (status == asynError) {
@@ -554,6 +570,7 @@ NDPluginArucoUnwarp::NDPluginArucoUnwarp(const char *portName, int queueSize, in
 
     //common params
     createParam(NDPluginArucoUnwarpShowMappingString, asynParamInt32, &NDPluginArucoUnwarpShowMapping);
+    createParam(NDPluginArucoUnwarpShowMarkersString, asynParamInt32, &NDPluginArucoUnwarpShowMarkers);
     createParam(NDPluginArucoUnwarpFindHomographyString, asynParamInt32, &NDPluginArucoUnwarpFindHomography);
     
     setStringParam(NDPluginDriverPluginType, "NDPluginArucoUnwarp");

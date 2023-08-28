@@ -47,3 +47,21 @@ record(bi, "$(P)$(R)FindHomography_RBV")
 	field(ONAM, "Find new homography")
 	field(SCAN, "I/O Intr")
 }
+
+record(bo, "$(P)$(R)ShowMarkers")
+{
+	field(PINI, "NO")
+	field(DTYP, "asynInt32")
+	field(OUT, "@asyn($(PORT),$(ADDR),$(TIMEOUT))SHOW_MARKERS")
+	field(ZNAM, "do not show markers")
+	field(ONAM, "show markers")
+}
+
+record(bi, "$(P)$(R)ShowMarkers_RBV")
+{
+	field(DTYP, "asynInt32")
+	field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))SHOW_MARKERS")
+	field(ZNAM, "do not show markers")
+	field(ONAM, "show markers")
+	field(SCAN, "I/O Intr")
+}

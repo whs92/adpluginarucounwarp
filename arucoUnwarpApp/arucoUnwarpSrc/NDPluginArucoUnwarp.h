@@ -35,7 +35,7 @@ using namespace cv;
 
 #define NDPluginArucoUnwarpShowMappingString "SHOW_MAPPING"          //asynInt32
 #define NDPluginArucoUnwarpFindHomographyString "FIND_HOMOGRAPHY"          //asynInt32
-
+#define NDPluginArucoUnwarpShowMarkersString "SHOW_MARKERS"          //asynInt32
 
 /* class that does ArucoUnwarpcode readings */
 class NDPluginArucoUnwarp : public NDPluginDriver {
@@ -56,7 +56,7 @@ class NDPluginArucoUnwarp : public NDPluginDriver {
   
     int NDPluginArucoUnwarpShowMapping;
 #define ND_ArucoUnwarp_FIRST_PARAM NDPluginArucoUnwarpShowMapping
-    
+    int NDPluginArucoUnwarpShowMarkers;
     //boolean to decide to use existing homography or find a new one
     int NDPluginArucoUnwarpFindHomography;
 #define ND_ArucoUnwarp_LAST_PARAM NDPluginArucoUnwarpFindHomography
