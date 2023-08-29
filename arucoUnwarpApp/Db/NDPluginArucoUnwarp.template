@@ -63,14 +63,14 @@ record(bo, "$(P)$(R)IncludeArUco")
 	field(DTYP, "asynInt32")
 	field(OUT, "@asyn($(PORT),$(ADDR),$(TIMEOUT))INCLUDE_ARUCO")
 	field(ZNAM, "Use only Checkerboard")
-	field(ONAM, "Use ArUco and Checkerboard")
+	field(ONAM, "ArUco + Checkerboard")
 }
 record(bi, "$(P)$(R)IncludeArUco_RBV")
 {
 	field(DTYP, "asynInt32")
 	field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))INCLUDE_ARUCO")
 	field(ZNAM, "Use only Checkerboard")
-	field(ONAM, "Use ArUco and Checkerboard")
+	field(ONAM, "ArUco + Checkerboard")
 	field(SCAN, "I/O Intr")
 }
 

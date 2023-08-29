@@ -365,6 +365,9 @@ asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
     NDArrayInfo arrayInfo;
     // convert to Mat
     pArray->getInfo(&arrayInfo);
+    float scale;
+
+    scale = 8;
 
     asynStatus status;
     int showMapping, findHomography, homographyAvailable, includeAruco;
@@ -481,7 +484,12 @@ asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
 
         // find the homography
         if(inpCharucoCorners.size()>3 && subRefCharucoCorners.size()>3){
-            this -> H = cv::findHomography( inpCharucoCorners,subRefCharucoCorners, cv::RANSAC,5);
+            
+            Mat S;
+            
+            S = (Mat_<double>(3,3) << scale, 0, 0, 0, scale, 0, 0, 0, 1); // 3x3 scaling matrix
+
+            this -> H = S* cv::findHomography( inpCharucoCorners,subRefCharucoCorners, cv::RANSAC,5);
             homographyAvailable = 1;
             setIntegerParam(NDPluginArucoUnwarpHomographyAvailable,homographyAvailable);
             
@@ -493,7 +501,12 @@ asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
 
         //perform the warping
         Mat warped_img;
-        cv::warpPerspective(img,warped_img, this -> H, ref_img.size(),cv::INTER_LINEAR);
+        Size im_size;
+
+        im_size = ref_img.size();
+        im_size.width = ref_img.size().width* scale;
+        im_size.height = ref_img.size().height* scale;
+        cv::warpPerspective(img,warped_img, this -> H, im_size,cv::INTER_LINEAR);
         img = warped_img;
 
 
