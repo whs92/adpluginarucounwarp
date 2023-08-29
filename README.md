@@ -4,7 +4,7 @@ A plugin for EPICS Area Detector using OpenCV libraries which detects ChArUco co
 and then uses the points from those detected codes to find a homography transform between the
 input image and a generated image of a known size. The transform is then applied
 
-Primary Author:    	Will Smith, 
+Primary Author:    	Will Smith
 
 ### Installation and dependancies
 
@@ -101,6 +101,16 @@ To use ADPluginBar with CSS, place the provided .bob screens into your CSS setup
 appropriately. The plugin supports 8 and 16 bit images in Mono or RGB formats. In order to view the unwarped image live, you may use any EPICS image viewer such as ImageJ, NDPluginStdArrays, or NDPluginPva, by setting the NDArrayPort to ARUCO1, or whichever port the plugin was assigned. This will display the image that the plugin processes.
 
 Intended usage is that a reference screen is created and printed onto a flat surface. The parameters for that reference screen are added to this plugin. The plugin is then fed an image containing the screen or some part of it. ChArUco codes are found and then those points are used to unwarp the input image and provide some scaling. 
+
+#### Example Input Image
+![Example Input Image](docs/images/InputImage.png)
+
+#### Output Showing Mapping
+![Showing Mapping](docs/images/FindingMapping.png)
+
+#### Example Output After Homography Applied
+![The Output Image](docs/images/OutputImage.png)
+
 ### Process Variables Supported
 
 PV		|  Comment
