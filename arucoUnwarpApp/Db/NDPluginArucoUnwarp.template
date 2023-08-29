@@ -223,3 +223,11 @@ record(longin, "$(P)$(R)Scaling_RBV")
 	field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))SCALING")
 	field(SCAN, "I/O Intr")
 }
+
+record(ai, "$(P)$(R)OutputScaling_RBV")
+{
+	field(DTYP, "asynFloat64")
+	field(EGU, "mm")
+	field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))OUTPUT_SCALING")
+	field(SCAN, "I/O Intr")
+}

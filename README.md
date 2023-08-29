@@ -112,6 +112,7 @@ RefMarkerSize | The number of pixels in each marker in the ChArUco board
 RefBoardSquares | The number of squares in the ChArUco board
 ArUcoDict | The dictionary used to generate the ArUco Board (Current disconnected)
 Scaling | The scaling applied to the image during the unwarping
+OutputScaling_RBV | The scaling from pixels to mm that will result in the output image
 ShowMapping |  When set to 1 the mapping between all detected points in the input and the reference image will be shown. Useful for debug
 FindHomography | When set to 1 a new homography will be determined for every new input image. When set to 0 it will use the last determined homography matrix
 ShowMarkers | When Set to 1 will show the ChArUco markers on the output image

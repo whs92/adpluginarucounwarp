@@ -282,14 +282,17 @@ asynStatus NDPluginArucoUnwarp::gen_charuco_img(Mat &img,  int dict ){
     //Draw the board
     Mat temp_img;
     const char* functionName = "gen_charuco_img";
-    int boardSquares, squareSize, markerSize;//boardSize is in mm
-    double boardSize, mmPx;
+    int boardSquares, squareSize, markerSize,scale;//boardSize is in mm
+    double boardSize, mmPx, outMmPx;
     getDoubleParam(NDPluginArucoUnwarpRefBoardSize, &boardSize);
     getDoubleParam(NDPluginArucoUnwarpRefMmPx, &mmPx);
     getIntegerParam(NDPluginArucoUnwarpRefBoardSquares, &boardSquares);
     getIntegerParam(NDPluginArucoUnwarpRefMarkerSize, &markerSize);
     getIntegerParam(NDPluginArucoUnwarpRefSquareSize, &squareSize);
-    
+    getIntegerParam(NDPluginArucoUnwarpScaling, &scale);
+
+    outMmPx = mmPx/scale;
+    setDoubleParam(NDPluginArucoUnwarpOutputScaling, outMmPx);
     // Create the reference board
     cv::Ptr<cv::aruco::CharucoBoard> board;
     cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(dict);
@@ -634,6 +637,7 @@ NDPluginArucoUnwarp::NDPluginArucoUnwarp(const char *portName, int queueSize, in
     createParam(NDPluginArucoUnwarpRefBoardSquaresString, asynParamInt32, &NDPluginArucoUnwarpRefBoardSquares);
     createParam(NDPluginArucoUnwarpArUcoDictString, asynParamInt32, &NDPluginArucoUnwarpArUcoDict);
     createParam(NDPluginArucoUnwarpScalingString, asynParamInt32, &NDPluginArucoUnwarpScaling);
+    createParam(NDPluginArucoUnwarpOutputScalingString, asynParamFloat64, &NDPluginArucoUnwarpOutputScaling);
 
 
     setIntegerParam(NDPluginArucoUnwarpHomographyAvailable,0);

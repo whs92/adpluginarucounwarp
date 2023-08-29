@@ -45,6 +45,7 @@ using namespace cv;
 #define NDPluginArucoUnwarpRefBoardSquaresString "REF_BOARD_SQUARES"        //asynInt32
 #define NDPluginArucoUnwarpArUcoDictString "ARUCO_DICT"                     //asynInt32
 #define NDPluginArucoUnwarpScalingString "SCALING"                          //asynInt32
+#define NDPluginArucoUnwarpOutputScalingString "OUTPUT_SCALING"             //asynFloat64
 
 
 
@@ -77,6 +78,7 @@ class NDPluginArucoUnwarp : public NDPluginDriver {
     int NDPluginArucoUnwarpRefBoardSquares;
     int NDPluginArucoUnwarpArUcoDict;
     int NDPluginArucoUnwarpScaling;
+    int NDPluginArucoUnwarpOutputScaling;
     //boolean to decide to use existing homography or find a new one
     int NDPluginArucoUnwarpFindHomography;
 #define ND_ArucoUnwarp_LAST_PARAM NDPluginArucoUnwarpFindHomography
