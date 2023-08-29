@@ -2,11 +2,9 @@
  * NDPluginArucoUnwarp.h
  *
  * Header file for EPICS ArucoUnwarp/QR reader plugin
- * Author: Jakub Wlodek
- * Co-author: Kazimier Gofron
+ * Author: Will Smith
  *
- * Created on: December 5, 2017
- * Last Updated: January 4, 2019
+ * Created on: August 28, 2023
 */
 
 #ifndef NDPluginArucoUnwarp_H
