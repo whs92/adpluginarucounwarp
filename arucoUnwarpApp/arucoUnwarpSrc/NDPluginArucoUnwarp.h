@@ -36,8 +36,18 @@ using namespace cv;
 #define NDPluginArucoUnwarpShowMappingString "SHOW_MAPPING"                 //asynInt32
 #define NDPluginArucoUnwarpFindHomographyString "FIND_HOMOGRAPHY"           //asynInt32
 #define NDPluginArucoUnwarpShowMarkersString "SHOW_MARKERS"                 //asynInt32
-#define NDPluginArucoUnwarpIncludeArucoString "INCLUDE_ARUCO" //asynInt32
+#define NDPluginArucoUnwarpIncludeArucoString "INCLUDE_ARUCO"               //asynInt32
 #define NDPluginArucoUnwarpHomographyAvailableString "HOMOGRAPHY_AVAILABLE" //asynInt32
+#define NDPluginArucoUnwarpRefBoardSizeString "REF_BOARD_SIZE"              //asynFloat64
+#define NDPluginArucoUnwarpRefMmPxString "REF_MM_PX"                        //asynFloat64
+#define NDPluginArucoUnwarpRefSquareSizeString "REF_SQUARE_SIZE"            //asynInt32
+#define NDPluginArucoUnwarpRefMarkerSizeString "REF_MARKER_SIZE"            //asynInt32
+#define NDPluginArucoUnwarpRefBoardSquaresString "REF_BOARD_SQUARES"        //asynInt32
+#define NDPluginArucoUnwarpArUcoDictString "ARUCO_DICT"                     //asynInt32
+#define NDPluginArucoUnwarpScalingString "SCALING"                          //asynInt32
+
+
+
 /* class that does ArucoUnwarpcode readings */
 class NDPluginArucoUnwarp : public NDPluginDriver {
    public:
@@ -60,6 +70,13 @@ class NDPluginArucoUnwarp : public NDPluginDriver {
     int NDPluginArucoUnwarpShowMarkers;
     int NDPluginArucoUnwarpHomographyAvailable;
     int NDPluginArucoUnwarpIncludeAruco;
+    int NDPluginArucoUnwarpRefBoardSize;
+    int NDPluginArucoUnwarpRefMmPx;
+    int NDPluginArucoUnwarpRefSquareSize;
+    int NDPluginArucoUnwarpRefMarkerSize;
+    int NDPluginArucoUnwarpRefBoardSquares;
+    int NDPluginArucoUnwarpArUcoDict;
+    int NDPluginArucoUnwarpScaling;
     //boolean to decide to use existing homography or find a new one
     int NDPluginArucoUnwarpFindHomography;
 #define ND_ArucoUnwarp_LAST_PARAM NDPluginArucoUnwarpFindHomography

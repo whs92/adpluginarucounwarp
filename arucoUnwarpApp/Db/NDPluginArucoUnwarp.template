@@ -11,10 +11,10 @@ include "NDPluginBase.template"
 # enable/disable side by side matching plot
 # enable/disable find new homography or use existing
 
-
+#### ----------- Basic Control of Plugin -----------
 record(bo, "$(P)$(R)ShowMapping")
 {
-	field(PINI, "NO")
+	field(PINI, "YES")
 	field(DTYP, "asynInt32")
 	field(OUT, "@asyn($(PORT),$(ADDR),$(TIMEOUT))SHOW_MAPPING")
 	field(ZNAM, "Display unwarped")
@@ -32,7 +32,7 @@ record(bi, "$(P)$(R)ShowMapping_RBV")
 
 record(bo, "$(P)$(R)FindHomography")
 {
-	field(PINI, "NO")
+	field(PINI, "YES")
 	field(DTYP, "asynInt32")
 	field(OUT, "@asyn($(PORT),$(ADDR),$(TIMEOUT))FIND_HOMOGRAPHY")
 	field(ZNAM, "Use existing homography")
@@ -50,7 +50,7 @@ record(bi, "$(P)$(R)FindHomography_RBV")
 
 record(bo, "$(P)$(R)ShowMarkers")
 {
-	field(PINI, "NO")
+	field(PINI, "YES")
 	field(DTYP, "asynInt32")
 	field(OUT, "@asyn($(PORT),$(ADDR),$(TIMEOUT))SHOW_MARKERS")
 	field(ZNAM, "do not show markers")
@@ -59,7 +59,7 @@ record(bo, "$(P)$(R)ShowMarkers")
 
 record(bo, "$(P)$(R)IncludeArUco")
 {
-	field(PINI, "NO")
+	field(PINI, "YES")
 	field(DTYP, "asynInt32")
 	field(OUT, "@asyn($(PORT),$(ADDR),$(TIMEOUT))INCLUDE_ARUCO")
 	field(ZNAM, "Use only Checkerboard")
@@ -93,4 +93,133 @@ record(bi, "$(P)$(R)HomographyAvailable_RBV")
 	field(SCAN, "I/O Intr")
 }
 
+#### ----------- ArUco Ref Parameters -----------
 
+# Board Size (mm) REF_BOARD_SIZE
+# mm per pixel (mm) REF_MM_PX
+# Square Size (px) REF_SQUARE_SIZE
+# Marker Size (px) REF_MARKER_SIZE
+# Board Squares REF_BOARD_SQUARES
+# ArUco Dict ARUCO_DICT
+
+record(ao, "$(P)$(R)RefBoardSize")
+{
+	field(PINI, "YES")
+	field(EGU, "mm")
+	field(DTYP, "asynFloat64")
+	field(OUT, "@asyn($(PORT),$(ADDR),$(TIMEOUT))REF_BOARD_SIZE")
+	field(VAL, 16.25)
+}
+
+record(ai, "$(P)$(R)RefBoardSize_RBV")
+{
+	field(EGU, "mm")
+	field(DTYP, "asynFloat64")
+	field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))REF_BOARD_SIZE")
+	field(SCAN, "I/O Intr")
+}
+
+record(ao, "$(P)$(R)MmPx")
+{
+	field(PINI, "YES")
+	field(EGU, "mm")
+	field(DTYP, "asynFloat64")
+	field(OUT, "@asyn($(PORT),$(ADDR),$(TIMEOUT))REF_MM_PX")
+	field(VAL, 0.025)
+}
+
+record(ai, "$(P)$(R)MmPx_RBV")
+{
+	field(EGU, "mm")
+	field(DTYP, "asynFloat64")
+	field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))REF_MM_PX")
+	field(SCAN, "I/O Intr")
+}
+
+record(longout, "$(P)$(R)RefSquareSize")
+{
+	field(PINI, "YES")
+	field(EGU, "px")
+	field(DTYP, "asynInt32")
+	field(OUT, "@asyn($(PORT),$(ADDR),$(TIMEOUT))REF_SQUARE_SIZE")
+	field(VAL, 20)
+
+}
+
+record(longin, "$(P)$(R)RefSquareSize_RBV")
+{
+	field(EGU, "px")
+	field(DTYP, "asynInt32")
+	field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))REF_SQUARE_SIZE")
+	field(SCAN, "I/O Intr")
+}
+
+record(longout, "$(P)$(R)RefMarkerSize")
+{
+	field(PINI, "YES")
+	field(EGU, "px")
+	field(DTYP, "asynInt32")
+	field(OUT, "@asyn($(PORT),$(ADDR),$(TIMEOUT))REF_MARKER_SIZE")
+	field(VAL, 14)
+}
+
+record(longin, "$(P)$(R)RefMarkerSize_RBV")
+{
+	field(EGU, "px")
+	field(DTYP, "asynInt32")
+	field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))REF_MARKER_SIZE")
+	field(SCAN, "I/O Intr")
+}
+
+record(longout, "$(P)$(R)RefBoardSquares")
+{
+	field(PINI, "YES")
+	field(DTYP, "asynInt32")
+	field(OUT, "@asyn($(PORT),$(ADDR),$(TIMEOUT))REF_BOARD_SQUARES")
+	field(VAL, 5)
+
+}
+
+record(longin, "$(P)$(R)RefBoardSquares_RBV")
+{
+	field(DTYP, "asynInt32")
+	field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))REF_BOARD_SQUARES")
+	field(SCAN, "I/O Intr")
+}
+
+record(mbbo, "$(P)$(R)ArUcoDict")
+{
+	field(PINI, "YES")
+	field(DTYP, "asynInt32")
+	field(OUT, "@asyn($(PORT),$(ADDR),$(TIMEOUT))ARUCO_DICT")
+	field(ZRVL, 0)
+	field(ZRST, "DICT_4X4_250")
+	field(VAL, 0)
+}
+
+record(mbbi, "$(P)$(R)ArUcoDict_RBV")
+{
+	field(DTYP, "asynInt32")
+	field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))ARUCO_DICT")
+	field(ZRVL, 0)
+	field(ZRST, "DICT_4X4_250")
+	field(SCAN, "I/O Intr")
+}
+
+#### ------------ Other Parameters ------------
+
+record(longout, "$(P)$(R)Scaling")
+{
+	field(PINI, "YES")
+	field(DTYP, "asynInt32")
+	field(OUT, "@asyn($(PORT),$(ADDR),$(TIMEOUT))SCALING")
+	field(VAL, 4)
+
+}
+
+record(longin, "$(P)$(R)Scaling_RBV")
+{
+	field(DTYP, "asynInt32")
+	field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))SCALING")
+	field(SCAN, "I/O Intr")
+}
