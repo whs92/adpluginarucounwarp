@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--Saved on 2023-08-29 15:10:03 by emil-->
+<!--Saved on 2023-08-29 17:14:40 by emil-->
 <display version="2.0.0">
   <name>NDPluginArucoUnwarp</name>
   <x>656</x>
@@ -1479,6 +1479,39 @@
       </color>
     </background_color>
     <format>1</format>
+    <border_alarm_sensitive>false</border_alarm_sensitive>
+  </widget>
+  <widget type="label" version="2.0.0">
+    <name>text #48_13</name>
+    <text>Output mm/px</text>
+    <x>395</x>
+    <y>425</y>
+    <width>125</width>
+    <font>
+      <font family="Liberation Sans" style="REGULAR" size="16.0">
+      </font>
+    </font>
+  </widget>
+  <widget type="textupdate" version="2.0.0">
+    <name>text update #55_8</name>
+    <pv_name>$(P)$(R)OutputScaling_RBV</pv_name>
+    <x>656</x>
+    <y>430</y>
+    <height>18</height>
+    <font>
+      <font family="Liberation Sans" style="REGULAR" size="16.0">
+      </font>
+    </font>
+    <foreground_color>
+      <color red="10" green="0" blue="184">
+      </color>
+    </foreground_color>
+    <background_color>
+      <color red="187" green="187" blue="187">
+      </color>
+    </background_color>
+    <format>1</format>
+    <precision>6</precision>
     <border_alarm_sensitive>false</border_alarm_sensitive>
   </widget>
 </display>
