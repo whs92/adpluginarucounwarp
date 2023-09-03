@@ -140,3 +140,12 @@ There are some limitiations to the current release of the NDPluginBar plugin:
 * 
 
 For any other issues or limitations, please feel free to submit an issue on the ADPluginArucoUnwarp github page
+
+### Related Material
+
+Link		|  Comment
+----------------|---------------
+https://github.com/whs92/aruco_dev | A repository containing references images and an ipython notebook that helped with the development of this tool
+https://docs.opencv.org/4.x/d5/dae/tutorial_aruco_detection.html | A tutorial on performing ArUco Detection
+https://docs.opencv.org/4.x/d9/dab/tutorial_homography.html | An introduction to homography
+https://areadetector.github.io/master/ADPluginBar/ADPluginBar.html | The plugin that was the basis for this work
