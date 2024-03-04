@@ -369,7 +369,9 @@ asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
     const char* functionName = "ArucoUnwarpcode_image_callback";
     NDArrayInfo arrayInfo;
     // convert to Mat
+    
     pArray->getInfo(&arrayInfo);
+    asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s Getting array info\n", driverName, functionName);
 
     asynStatus status;
     int showMapping, findHomography, homographyAvailable, includeAruco, scale;
@@ -382,6 +384,7 @@ asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
 
     // Convert the array into the image matrix
     status = ndArray2Mat(pArray, &arrayInfo, img);
+    asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s converted to matrix\n", driverName, functionName);
     if (status == asynError) {
         asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s Error converting to Mat\n", driverName, functionName);
         this->processing = false;
@@ -390,6 +393,7 @@ asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
     
     // Generate the reference image
     status = gen_charuco_img(ref_img, cv::aruco::DICT_4X4_250);
+    asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s generated reference image\n", driverName, functionName);
     if (status == asynError) {
         asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s Error generating reference image\n", driverName, functionName);
         this->processing = false;
@@ -405,6 +409,7 @@ asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
     std::vector<cv::Point2f> inpCharucoCorners, refCharucoCorners,subRefCharucoCorners,inpMarkerCornersExpanded, subRefMarkerCornersExpanded;
 
     status = find_charuco_arrays(img, cv::aruco::DICT_4X4_250, inpMarkerCorners,inpMarkerIds,  inpCharucoCorners,inpCharucoIds);
+    asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s Found charuco arrays in image\n", driverName, functionName);
     if (status == asynError) {
         asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s Error finding charuco in input image\n", driverName, functionName);
         this->processing = false;
@@ -412,6 +417,7 @@ asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
     }
     
     status = find_charuco_arrays(ref_img, cv::aruco::DICT_4X4_250, refMarkerCorners,refMarkerIds,  refCharucoCorners,refCharucoIds);
+    asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s Found charuco arrays in ref\n", driverName, functionName);
     if (status == asynError) {
         asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s Error finding charuco in reference image\n", driverName, functionName);
         this->processing = false;
@@ -419,22 +425,42 @@ asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
     }
 
     
-    //Itterate through the markers found in the input image. For each id, use the id as the index to the refMarkers to make a new
+    // Itterate through the markers found in the input image. For each id, use the id as the index to the refMarkers to make a new
     // list that is a subset of the original refMarkerCorners
     
     unsigned int element;
     
     // generate the subset of reference markers which also apear in the input
+    asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s Generating subset of reference markers also in input\n", driverName, functionName);
     for(unsigned int index=0; index<inpMarkerCorners.size();index++){   
         
         // get the marker id from the vector of marker id's found in the input. Note it's reversed
-        element = refMarkerIds.size() - inpMarkerIds[index]-1;
 
-        // since the marker id is also it's index in the reference vector, we can use it as the index to retrieve the value
-        subRefMarkerCorners.insert(subRefMarkerCorners.begin() + index, refMarkerCorners[element]);
+        // check that the marker id in the input image appears in the ref image. There is probably a more efficient way of doing this...
+        unsigned int marker_appears =0;
+        unsigned int marker_index = 0;
+        for(unsigned int j=0; j<refMarkerIds.size();j++){
+            if (refMarkerIds[j] == inpMarkerIds[index]){
+                marker_appears = 1;
+                marker_index = j;
+            }
+        }
+
+        if (marker_appears ==1){
+            
+            subRefMarkerCorners.insert(subRefMarkerCorners.begin() + index, refMarkerCorners[marker_index]);
+           
+        }
+        else{
+            asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s A marker corner was found which is not in the reference image, %d\n", driverName, functionName,inpMarkerIds[index]);
+        }
+  
+        
     }
 
     // expand the inputMarkerCorners and subRefMarkerCorners from vectors of vectors of points to vectors of points
+    //asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s expanding marker corners\n", driverName, functionName);
+
     for(unsigned int i=0; i<inpMarkerCorners.size();i++){
         //for each point in the corner set
         for(unsigned int j=0; j<4;j++){
@@ -444,13 +470,33 @@ asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
     }
     
     /// ----------- Now the same for the Charuco Corners ----------------
-    
+    //asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s expanding charuco corners\n", driverName, functionName);
     for(unsigned int index=0; index<inpCharucoCorners.size();index++){
         // get the marker id from the vector of marker id's found in the input
+
         element = inpCharucoIds[index];
 
-        // since the marker id is also it's index in the reference vector, we can use it as the index to retrieve the value
-        subRefCharucoCorners.insert(subRefCharucoCorners.begin() + index, refCharucoCorners[element]);
+        // check that it appears in the refCharucoIds list
+        unsigned int id_appears =0;
+        unsigned int id_index = 0;
+        for(unsigned int j=0; j<refCharucoIds.size();j++){
+            if (refCharucoIds[j] == inpCharucoIds[index]){
+                id_appears = 1;
+                id_index = j;
+            }
+        }
+        if(id_appears == 1){
+
+            // since the marker id is also it's index in the reference vector, we can use it as the index to retrieve the value
+            subRefCharucoCorners.insert(subRefCharucoCorners.begin() + index, refCharucoCorners[id_index]);
+
+
+        }
+        else{
+            asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s A Charuco corner was found which is not in the reference image, %d\n", driverName, functionName,inpCharucoIds[index]);
+        }
+
+        
     } 
 
     // ------------ Join vectors and determine homography -----------------
@@ -462,7 +508,8 @@ asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
     }
     
     if(showMapping == 1){
-        
+        asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s show matches\n", driverName, functionName);
+
         Mat cat_img;
         show_matches(img, ref_img, cat_img,inpCharucoCorners,subRefCharucoCorners);
         img = cat_img;
@@ -471,6 +518,8 @@ asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
     else if(findHomography ==1){
 
         // find the homography
+        asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s finding homography\n", driverName, functionName);
+
         if(inpCharucoCorners.size()>3 && subRefCharucoCorners.size()>3){
             
             Mat S;
@@ -489,6 +538,7 @@ asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
     if(homographyAvailable ==1 && showMapping == 0){
 
         //perform the warping
+        asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s perform warping\n", driverName, functionName);
         Mat warped_img;
         Size im_size;
 
@@ -500,7 +550,7 @@ asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
 
 
     }
-
+    asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s mat2NDArray\n", driverName, functionName);
     status = mat2NDArray(pScratch, img);
     if (status == asynError) {
         asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s Error, image not processed correctly\n", driverName, functionName);
