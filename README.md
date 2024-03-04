@@ -58,7 +58,7 @@ set_requestfile_path("$(ADPLUGINARUCOUNWARP)/arucoUnwarpApp/Db")
 
 ```
 
-This will add ADPluginBar to the boot operation when the ioc is run.  
+This will add ADPluginArUcoUnwarp to the boot operation when the ioc is run.  
 
 Next in the configure directory at the top level of areaDetector, open the RELEASE_PRODS.local file, and add the following:
 
@@ -68,7 +68,7 @@ ADPLUGINARUCOUNWARP=$(AREA_DETECTOR)/ADPluginArucoUnwarp
 
 ```
 
-This will tell areaDetector to include ADPluginBar at compilation.   
+This will tell areaDetector to include ADPluginArUcoUnwarp at compilation.   
 
 Then, in the CONFIG_SITE.local.$(YOUR HOST) file, ensure that the following is defined:  
 
@@ -83,7 +83,15 @@ OPENCV          = /usr
 
 Simply replace the variable to give your path to OpenCV includes. Make sure that WITH_OPENCV is set to "YES"
 
-Next, in CONFIG_SITE.local, in the same directory, make sure that WITH_OPENCV and OPENCV_EXTERNAL are both set to "YES"
+Next, in CONFIG_SITE.local, in the same directory, make sure that WITH_OPENCV and OPENCV_EXTERNAL are both set to "YES". On my machine I had to set the following. Maybe this is also helpful for you.  
+
+```
+WITH_OPENCV     = YES 
+OPENCV          = /usr
+#OPENCV_LIB     = $(OPENCV)/lib64
+OPENCV_INCLUDE = -I$(OPENCV)/include/opencv4/opencv -I$(OPENCV)/include/opencv4
+
+```
 
 Once you have done all of this, compile ADSupport, then ADCore, and then run
 
@@ -97,7 +105,7 @@ You have now installed the ADPluginArucoUnwarp Plugin.
 
 ### Usage
 
-To use ADPluginBar with CSS, place the provided .bob screens into your CSS setup, and link to it
+To use ADPluginArucoUnwarp with CSS, place the provided .bob screens into your CSS setup, and link to it
 appropriately. The plugin supports 8 and 16 bit images in Mono or RGB formats. In order to view the unwarped image live, you may use any EPICS image viewer such as ImageJ, NDPluginStdArrays, or NDPluginPva, by setting the NDArrayPort to ARUCO1, or whichever port the plugin was assigned. This will display the image that the plugin processes.
 
 Intended usage is that a reference screen is created and printed onto a flat surface. The parameters for that reference screen are added to this plugin. The plugin is then fed an image containing the screen or some part of it. ChArUco codes are found and then those points are used to unwarp the input image and provide some scaling. 
@@ -133,7 +141,7 @@ HomographyAvailable_RBV | When this PV is asserted a previous homography is avai
 
 ### Known limitations
 
-There are some limitiations to the current release of the NDPluginBar plugin:
+There are some limitiations to the current release of the NDPluginArucoUnwarp plugin:
 
 * The acquisition of ArUco Marker Corners is not as stable as the ChArUco Corners
 * A lot of the parameters used in the steps to find the aruco codes are hard coded and still need to be exposed as EPICS PV'same
