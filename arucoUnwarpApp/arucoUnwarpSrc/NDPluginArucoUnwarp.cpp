@@ -219,10 +219,8 @@ asynStatus NDPluginArucoUnwarp::find_charuco_arrays(Mat &img,  int dict, InputOu
     //Find the arucoMarkers
     cv::aruco::detectMarkers(img, dictionary, markerCorners, markerIds, parameters, rejectedCandidates);
 
-    //asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s detected %d markers\n", driverName, functionName, markerIds.getMat().total());
     //Find the ChArUco Corners
     if(markerIds.getMat().total()>0){
-        //asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s Refining Markers\n", driverName, functionName);
     
         //Refine the selection using the stuff we know about the board
         cv::aruco::refineDetectedMarkers(img, board, markerCorners, markerIds,rejectedCandidates);
@@ -292,7 +290,6 @@ asynStatus NDPluginArucoUnwarp::gen_charuco_img(Mat &img,  int dict ){
     board->draw(cv::Size(boardSizePx,boardSizePx),temp_img); //we have to use -> because board is a pointer. 
     cvtColor(temp_img, temp_img, COLOR_GRAY2RGB);
 
-    //asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s Info, The board is %d x %d pixels or %f x %f mm\n", driverName, functionName, bsize,bsize, board_size_mm,board_size_mm);
     
     //Invert the board and pass to the input image
     cv::bitwise_not(temp_img, img);
@@ -371,7 +368,6 @@ asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
     // convert to Mat
     
     pArray->getInfo(&arrayInfo);
-    asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s Getting array info\n", driverName, functionName);
 
     asynStatus status;
     int showMapping, findHomography, homographyAvailable, includeAruco, scale;
@@ -384,7 +380,6 @@ asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
 
     // Convert the array into the image matrix
     status = ndArray2Mat(pArray, &arrayInfo, img);
-    asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s converted to matrix\n", driverName, functionName);
     if (status == asynError) {
         asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s Error converting to Mat\n", driverName, functionName);
         this->processing = false;
@@ -393,7 +388,6 @@ asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
     
     // Generate the reference image
     status = gen_charuco_img(ref_img, cv::aruco::DICT_4X4_250);
-    asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s generated reference image\n", driverName, functionName);
     if (status == asynError) {
         asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s Error generating reference image\n", driverName, functionName);
         this->processing = false;
@@ -409,7 +403,6 @@ asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
     std::vector<cv::Point2f> inpCharucoCorners, refCharucoCorners,subRefCharucoCorners,inpMarkerCornersExpanded, subRefMarkerCornersExpanded;
 
     status = find_charuco_arrays(img, cv::aruco::DICT_4X4_250, inpMarkerCorners,inpMarkerIds,  inpCharucoCorners,inpCharucoIds);
-    asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s Found charuco arrays in image\n", driverName, functionName);
     if (status == asynError) {
         asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s Error finding charuco in input image\n", driverName, functionName);
         this->processing = false;
@@ -417,7 +410,6 @@ asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
     }
     
     status = find_charuco_arrays(ref_img, cv::aruco::DICT_4X4_250, refMarkerCorners,refMarkerIds,  refCharucoCorners,refCharucoIds);
-    asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s Found charuco arrays in ref\n", driverName, functionName);
     if (status == asynError) {
         asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s Error finding charuco in reference image\n", driverName, functionName);
         this->processing = false;
@@ -431,13 +423,12 @@ asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
     unsigned int element;
     
     // generate the subset of reference markers which also apear in the input
-    asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s Generating subset of reference markers also in input\n", driverName, functionName);
     for(unsigned int index=0; index<inpMarkerCorners.size();index++){   
         
         // get the marker id from the vector of marker id's found in the input. Note it's reversed
 
         // check that the marker id in the input image appears in the ref image. There is probably a more efficient way of doing this...
-        unsigned int marker_appears =0;
+        unsigned int marker_appears = 0;
         unsigned int marker_index = 0;
         for(unsigned int j=0; j<refMarkerIds.size();j++){
             if (refMarkerIds[j] == inpMarkerIds[index]){
@@ -447,30 +438,31 @@ asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
         }
 
         if (marker_appears ==1){
-            
+           
             subRefMarkerCorners.insert(subRefMarkerCorners.begin() + index, refMarkerCorners[marker_index]);
+
+            // expand the inputMarkerCorners and subRefMarkerCorners from vectors of vectors of points to vectors of points
+            for(unsigned int j=0; j<4;j++){
+                inpMarkerCornersExpanded.push_back(inpMarkerCorners[index][j]);
+                subRefMarkerCornersExpanded.push_back(subRefMarkerCorners[index][j]);
+            }
            
         }
         else{
-            asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s A marker corner was found which is not in the reference image, %d\n", driverName, functionName,inpMarkerIds[index]);
+            asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s A marker corner was found which is not in the reference image, id = %d\n", driverName, functionName,inpMarkerIds[index],inpMarkerCorners.size(),inpMarkerIds.size());
+            //since this implies the image is somehow corrupted ignore any subsequent points from this image
+            subRefMarkerCornersExpanded.clear();
+            inpMarkerCornersExpanded.clear();
+            break;
         }
   
         
     }
 
-    // expand the inputMarkerCorners and subRefMarkerCorners from vectors of vectors of points to vectors of points
-    //asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s expanding marker corners\n", driverName, functionName);
-
-    for(unsigned int i=0; i<inpMarkerCorners.size();i++){
-        //for each point in the corner set
-        for(unsigned int j=0; j<4;j++){
-            inpMarkerCornersExpanded.push_back(inpMarkerCorners[i][j]);
-            subRefMarkerCornersExpanded.push_back(subRefMarkerCorners[i][j]);
-        }
-    }
+    
+  
     
     /// ----------- Now the same for the Charuco Corners ----------------
-    //asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s expanding charuco corners\n", driverName, functionName);
     for(unsigned int index=0; index<inpCharucoCorners.size();index++){
         // get the marker id from the vector of marker id's found in the input
 
@@ -494,6 +486,8 @@ asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
         }
         else{
             asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s A Charuco corner was found which is not in the reference image, %d\n", driverName, functionName,inpCharucoIds[index]);
+            subRefCharucoCorners.clear();
+            break;
         }
 
         
@@ -508,7 +502,6 @@ asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
     }
     
     if(showMapping == 1){
-        asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s show matches\n", driverName, functionName);
 
         Mat cat_img;
         show_matches(img, ref_img, cat_img,inpCharucoCorners,subRefCharucoCorners);
@@ -518,18 +511,34 @@ asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
     else if(findHomography ==1){
 
         // find the homography
-        asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s finding homography\n", driverName, functionName);
 
-        if(inpCharucoCorners.size()>3 && subRefCharucoCorners.size()>3){
+        if(inpCharucoCorners.size()>3 && subRefCharucoCorners.size()>3 && inpCharucoCorners.size()==subRefCharucoCorners.size()){
             
             Mat S;
+            Mat R;
+            
+            
+            S = (Mat_<double>(3,3) << scale, 0, 0, 0, scale, 0, 0, 0, 1); // 3x3 scaling matrix
+            try{
+                R =  cv::findHomography( inpCharucoCorners,subRefCharucoCorners, cv::RANSAC,5);
+                // If a homography was found
+                if (R.empty() == false){
+                    homographyAvailable = 1;
+                    this -> H = S*R;
+
+                }
+                else{
+                    asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s No homography can be found\n", driverName, functionName);
+                }
+                
+                setIntegerParam(NDPluginArucoUnwarpHomographyAvailable,homographyAvailable);
+            }
+            catch(...){
+                asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s Error finding homography\n", driverName, functionName);
+            }
             
 
-            S = (Mat_<double>(3,3) << scale, 0, 0, 0, scale, 0, 0, 0, 1); // 3x3 scaling matrix
-
-            this -> H = S* cv::findHomography( inpCharucoCorners,subRefCharucoCorners, cv::RANSAC,5);
-            homographyAvailable = 1;
-            setIntegerParam(NDPluginArucoUnwarpHomographyAvailable,homographyAvailable);
+            
             
         }
 
@@ -538,7 +547,6 @@ asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
     if(homographyAvailable ==1 && showMapping == 0){
 
         //perform the warping
-        asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s perform warping\n", driverName, functionName);
         Mat warped_img;
         Size im_size;
 
@@ -550,7 +558,6 @@ asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
 
 
     }
-    asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s mat2NDArray\n", driverName, functionName);
     status = mat2NDArray(pScratch, img);
     if (status == asynError) {
         asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s Error, image not processed correctly\n", driverName, functionName);
