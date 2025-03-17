@@ -108,7 +108,7 @@ record(ao, "$(P)$(R)RefBoardSize")
 	field(EGU, "mm")
 	field(DTYP, "asynFloat64")
 	field(OUT, "@asyn($(PORT),$(ADDR),$(TIMEOUT))REF_BOARD_SIZE")
-	field(VAL, 16.25)
+	field(VAL, 12)
 }
 
 record(ai, "$(P)$(R)RefBoardSize_RBV")
@@ -125,7 +125,7 @@ record(ao, "$(P)$(R)MmPx")
 	field(EGU, "mm")
 	field(DTYP, "asynFloat64")
 	field(OUT, "@asyn($(PORT),$(ADDR),$(TIMEOUT))REF_MM_PX")
-	field(VAL, 0.025)
+	field(VAL, 0.01)
 }
 
 record(ai, "$(P)$(R)MmPx_RBV")
@@ -142,7 +142,7 @@ record(longout, "$(P)$(R)RefSquareSize")
 	field(EGU, "px")
 	field(DTYP, "asynInt32")
 	field(OUT, "@asyn($(PORT),$(ADDR),$(TIMEOUT))REF_SQUARE_SIZE")
-	field(VAL, 20)
+	field(VAL, 10)
 
 }
 
@@ -160,7 +160,7 @@ record(longout, "$(P)$(R)RefMarkerSize")
 	field(EGU, "px")
 	field(DTYP, "asynInt32")
 	field(OUT, "@asyn($(PORT),$(ADDR),$(TIMEOUT))REF_MARKER_SIZE")
-	field(VAL, 14)
+	field(VAL, 7)
 }
 
 record(longin, "$(P)$(R)RefMarkerSize_RBV")
@@ -176,7 +176,7 @@ record(longout, "$(P)$(R)RefBoardSquares")
 	field(PINI, "YES")
 	field(DTYP, "asynInt32")
 	field(OUT, "@asyn($(PORT),$(ADDR),$(TIMEOUT))REF_BOARD_SQUARES")
-	field(VAL, 5)
+	field(VAL, 12)
 
 }
 

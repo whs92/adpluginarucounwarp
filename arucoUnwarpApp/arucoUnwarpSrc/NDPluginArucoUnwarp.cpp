@@ -282,8 +282,10 @@ asynStatus NDPluginArucoUnwarp::gen_charuco_img(Mat &img,  int dict ){
     // Create the reference board
     cv::Ptr<cv::aruco::CharucoBoard> board;
     cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(dict);
+    
     board = cv::aruco::CharucoBoard::create(boardSquares,boardSquares,squareSize,markerSize,dictionary);
     
+    //asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s Created reference board with squares: %d square_size: %d and markerSize: %d\n", driverName, functionName, boardSquares, squareSize, markerSize);
     //Draw the board
     int boardSizePx;
     boardSizePx = int(boardSize / mmPx);
@@ -438,7 +440,7 @@ asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
         }
 
         if (marker_appears ==1){
-           
+            //asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s Found marker corner with id = %d\n", driverName, functionName,inpMarkerIds[index]);
             subRefMarkerCorners.insert(subRefMarkerCorners.begin() + index, refMarkerCorners[marker_index]);
 
             // expand the inputMarkerCorners and subRefMarkerCorners from vectors of vectors of points to vectors of points
@@ -449,7 +451,7 @@ asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
            
         }
         else{
-            asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s A marker corner was found which is not in the reference image, id = %d\n", driverName, functionName,inpMarkerIds[index],inpMarkerCorners.size(),inpMarkerIds.size());
+            asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s A marker corner was found which is not in the reference image, id = %d\n", driverName, functionName,inpMarkerIds[index]);
             //since this implies the image is somehow corrupted ignore any subsequent points from this image
             subRefMarkerCornersExpanded.clear();
             inpMarkerCornersExpanded.clear();
