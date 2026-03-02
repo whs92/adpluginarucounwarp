@@ -510,6 +510,8 @@ asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
     }
     else if(findHomography ==1){
 
+        # if we want to find a new one, then delete the old
+        homographyAvailable = 0;
         // find the homography
 
         if(inpCharucoCorners.size()>3 && subRefCharucoCorners.size()>3 && inpCharucoCorners.size()==subRefCharucoCorners.size()){
@@ -531,14 +533,14 @@ asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
                     asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s No homography can be found\n", driverName, functionName);
                 }
                 
-                setIntegerParam(NDPluginArucoUnwarpHomographyAvailable,homographyAvailable);
+                
             }
             catch(...){
                 asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s Error finding homography\n", driverName, functionName);
             }
             
 
-            
+        setIntegerParam(NDPluginArucoUnwarpHomographyAvailable,homographyAvailable);
             
         }
 
