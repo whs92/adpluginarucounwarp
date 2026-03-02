@@ -512,7 +512,7 @@ asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
     
     if(findHomography ==1){
 
-        # if we want to find a new one, then delete the old
+        // if we want to find a new one, then delete the old
         homographyAvailable = 0;
         // find the homography
 
