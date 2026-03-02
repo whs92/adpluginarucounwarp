@@ -1,2 +1,9 @@
-# Nothing extra needed beyond NDPluginBase_settings.req for now
+$(P)$(R)MmPx
+$(P)$(R)RefBoardSize
+$(P)$(R)RefSquareSize
+$(P)$(R)RefMarkerSize
+$(P)$(R)RefBoardSquares
+$(P)$(R)IncludeArUco
+$(P)$(R)ArUcoDict
+$(P)$(R)Scaling
 file "NDPluginBase_settings.req", P=$(P), R=$(R)
