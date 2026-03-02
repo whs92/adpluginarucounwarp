@@ -514,6 +514,7 @@ asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
 
         # if we want to find a new one, then delete the old
         homographyAvailable = 0;
+        setIntegerParam(NDPluginArucoUnwarpHomographyAvailable,homographyAvailable);
         // find the homography
 
         if(inpCharucoCorners.size()>3 && subRefCharucoCorners.size()>3 && inpCharucoCorners.size()==subRefCharucoCorners.size()){
