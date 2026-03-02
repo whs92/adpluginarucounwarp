@@ -504,11 +504,13 @@ asynStatus NDPluginArucoUnwarp::ArucoUnwarpcode_image_callback(NDArray* pArray){
     if(showMapping == 1){
 
         Mat cat_img;
+       
         show_matches(img, ref_img, cat_img,inpCharucoCorners,subRefCharucoCorners);
         img = cat_img;
 
     }
-    else if(findHomography ==1){
+    
+    if(findHomography ==1){
 
         # if we want to find a new one, then delete the old
         homographyAvailable = 0;
